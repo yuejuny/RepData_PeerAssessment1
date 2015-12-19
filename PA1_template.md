@@ -33,7 +33,8 @@ library(ggplot2)
 # plot histogram
 ggplot(steps.each.day, aes(NSteps)) + 
   geom_histogram(binwidth=1000, colour = 'white', fill = 'lightblue')+
-  labs(x='Total number of steps per day')
+  labs(x='Total number of steps per day', 
+       title = 'Histogram of total steps per day (NAs are excluded)')
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-1-1.png) 
@@ -62,7 +63,8 @@ Table: Summary of total steps each day
 avg.steps.5m <- DT[, .(avg=mean(steps, na.rm = T)), by = interval]
 qplot(data = avg.steps.5m, interval, avg, geom='line')+
   geom_line(colour = 'darkgreen')+ 
-  labs(x = 'Time, minute', y = 'Mean num. steps')
+  labs(x = 'Time, minute', y = 'Mean num. steps',
+       title = 'Average step counts per 5-minute (NAs excluded)')
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
@@ -92,10 +94,17 @@ avg.steps.5m[order(-avg), ]
 
 ```r
 num.NA <- sum(is.na(DT$steps))
+num.NA
+```
+
+```
+## [1] 2304
 ```
 Unfortunately, there are 2304 records
 with NA in the dataset. Here we assign the average value 
-to missing fields. 
+to missing fields.  Missing step counts (i.e., NAs) are
+repalced by the average count corresponding to
+the interval.  
 
 
 ```r
@@ -117,7 +126,7 @@ ggplot(steps.each.day, aes(NSteps)) +
   geom_histogram(binwidth = 1000,
                  colour = 'white', fill = 'lightblue')+
   labs(x='Total number of steps per day', 
-       title='Updated dataset with NA replaced by mean number of steps')
+       title='Updated dataset with NA replaced by mean step count')
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-7-1.png) 
@@ -190,7 +199,8 @@ plot.df.m <- melt(plot.df, id.vars = 'interval',
                   variable.name = 'group', value.name = 'avg')
 ggplot(plot.df.m, aes(x = interval, y = avg)) +
   geom_line() + facet_grid(group ~ .) + 
-  labs(x = 'Time, minute', y = 'Average steps per 5 minutes')
+  labs(x = 'Time, minute', y = 'Average steps per 5 minutes',
+       title = 'Weekday/Weekend activity pattern comparison\nNAs are replaced with mean num. of steps')
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 

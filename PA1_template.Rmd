@@ -21,7 +21,8 @@ library(ggplot2)
 # plot histogram
 ggplot(steps.each.day, aes(NSteps)) + 
   geom_histogram(binwidth=1000, colour = 'white', fill = 'lightblue')+
-  labs(x='Total number of steps per day')
+  labs(x='Total number of steps per day', 
+       title = 'Histogram of total steps per day (NAs are excluded)')
 ```
 
 ```{r, echo = T, results = 'asis'}
@@ -38,7 +39,8 @@ pandoc.table(summary(steps.each.day$NSteps),
 avg.steps.5m <- DT[, .(avg=mean(steps, na.rm = T)), by = interval]
 qplot(data = avg.steps.5m, interval, avg, geom='line')+
   geom_line(colour = 'darkgreen')+ 
-  labs(x = 'Time, minute', y = 'Mean num. steps')
+  labs(x = 'Time, minute', y = 'Mean num. steps',
+       title = 'Average step counts per 5-minute (NAs excluded)')
 ```
 
 ```{r, echo=T}
@@ -49,10 +51,13 @@ avg.steps.5m[order(-avg), ]
 ## Imputing missing values
 ```{r echo=T}
 num.NA <- sum(is.na(DT$steps))
+num.NA
 ```
 Unfortunately, there are `r num.NA` records
 with NA in the dataset. Here we assign the average value 
-to missing fields. 
+to missing fields.  Missing step counts (i.e., NAs) are
+repalced by the average count corresponding to
+the interval.  
 
 ```{r, echo=T}
 setkey(avg.steps.5m, interval)
@@ -72,7 +77,7 @@ ggplot(steps.each.day, aes(NSteps)) +
   geom_histogram(binwidth = 1000,
                  colour = 'white', fill = 'lightblue')+
   labs(x='Total number of steps per day', 
-       title='Updated dataset with NA replaced by mean number of steps')
+       title='Updated dataset with NA replaced by mean step count')
 ```
 
 For the updated dataset, let's look at some statistics of steps per day.
@@ -99,5 +104,6 @@ plot.df.m <- melt(plot.df, id.vars = 'interval',
                   variable.name = 'group', value.name = 'avg')
 ggplot(plot.df.m, aes(x = interval, y = avg)) +
   geom_line() + facet_grid(group ~ .) + 
-  labs(x = 'Time, minute', y = 'Average steps per 5 minutes')
+  labs(x = 'Time, minute', y = 'Average steps per 5 minutes',
+       title = 'Weekday/Weekend activity pattern comparison\nNAs are replaced with mean num. of steps')
 ```
