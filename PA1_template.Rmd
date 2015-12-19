@@ -5,21 +5,99 @@ output:
     keep_md: true
 ---
 
-
 ## Loading and preprocessing the data
-
-
+```{r LoadData, echo = T}
+library(data.table)
+DT <- fread('activity.csv', colClasses = c('integer', 'character', 'integer'))
+DT[, date := as.Date(date)]
+```
 
 ## What is mean total number of steps taken per day?
 
 
+```{r, echo = T, fig.width= 9, fig.height=5}
+steps.each.day <- DT[!is.na(steps), .(NSteps=sum(steps)), by = date]
+library(ggplot2)
+# plot histogram
+ggplot(steps.each.day, aes(NSteps)) + 
+  geom_histogram(binwidth=1000, colour = 'white', fill = 'lightblue')+
+  labs(x='Total number of steps per day')
+```
+
+```{r, echo = T, results = 'asis'}
+library(pander)
+pandoc.table(summary(steps.each.day$NSteps),
+             style = 'rmarkdown', 
+             caption = 'Summary of total steps each day')
+```
+
 
 ## What is the average daily activity pattern?
 
+```{r, echo=T}
+avg.steps.5m <- DT[, .(avg=mean(steps, na.rm = T)), by = interval]
+qplot(data = avg.steps.5m, interval, avg, geom='line')+
+  geom_line(colour = 'darkgreen')+ 
+  labs(x = 'Time, minute', y = 'Mean num. steps')
+```
 
+```{r, echo=T}
+# Order by average steps (descending)
+avg.steps.5m[order(-avg), ]
+```
 
 ## Imputing missing values
+```{r echo=T}
+num.NA <- sum(is.na(DT$steps))
+```
+Unfortunately, there are `r num.NA` records
+with NA in the dataset. Here we assign the average value 
+to missing fields. 
+
+```{r, echo=T}
+setkey(avg.steps.5m, interval)
+missing.set <- DT[is.na(steps), ]
+setkey(missing.set, interval)
+# Look up mean steps for a interval and fill in missing set
+temp <- avg.steps.5m[missing.set, .(avg, interval, date)]
+setnames(temp, c('steps', 'interval', 'date'))
+x <- DT[!is.na(steps), ]
+new.DT <- rbind(x, temp)
+```
 
 
+```{r, echo = T, fig.width= 9, fig.height=5}
+steps.each.day <- new.DT[, .(NSteps=sum(steps)), by = date]
+ggplot(steps.each.day, aes(NSteps)) + 
+  geom_histogram(binwidth = 1000,
+                 colour = 'white', fill = 'lightblue')+
+  labs(x='Total number of steps per day', 
+       title='Updated dataset with NA replaced by mean number of steps')
+```
+
+For the updated dataset, let's look at some statistics of steps per day.
+
+```{r, echo = T, results = 'asis'}
+pandoc.table(summary(steps.each.day$NSteps), style = 'rmarkdown')
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r, echo = T}
+new.DT[, ':='(weekday=weekdays(date),
+              group='weekday')]
+new.DT[weekday=='Sunday'|weekday=='Saturday', group:='weekend']
+new.DT$group <- factor(new.DT$group, levels = c('weekday','weekend'))
+avg.step <- new.DT[group=='weekday', .(avg=mean(steps)), by=interval]
+avg.step.2 <- new.DT[group=='weekend', .(avg=mean(steps)), by=interval]
+plot.df <- merge(x = avg.step, y = avg.step.2,
+                 by = 'interval', all = T)
+setnames(plot.df, c('interval', 'weekday', 'weekend'))
+library(reshape2)
+plot.df.m <- melt(plot.df, id.vars = 'interval',
+                  variable.name = 'group', value.name = 'avg')
+ggplot(plot.df.m, aes(x = interval, y = avg)) +
+  geom_line() + facet_grid(group ~ .) + 
+  labs(x = 'Time, minute', y = 'Average steps per 5 minutes')
+```
